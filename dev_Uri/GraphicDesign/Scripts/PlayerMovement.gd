@@ -5,6 +5,14 @@ onready var main = get_node("/root/Main")
 var grabbed_right = KinematicBody2D.new()
 var grabbed_left = KinematicBody2D.new()
 
+onready var right_timer = settings.PICKUP_DELAY
+onready var left_timer = settings.PICKUP_DELAY
+
+var right_size = Vector2()
+var left_size = Vector2()
+
+var clones = []
+
 func _process(delta):
 	var velocity = Vector2.ZERO
 	if Input.is_key_pressed(KEY_UP):
@@ -26,12 +34,17 @@ func _process(delta):
 	# Moves the player and checks for collisions
 	var collision = move_and_collide(velocity * settings.PLAYER_SPEED)
 	# If key A is pressed, pick up the nearby item to the left hand
-	if Input.is_key_pressed(KEY_A):
+	if Input.is_key_pressed(KEY_D):
 		grab(true, collision)
 	# If key D is pressed, pick up the nearby item to the right hand
-	if Input.is_key_pressed(KEY_D):
+	if Input.is_key_pressed(KEY_A):
 		grab(false, collision)
 	boundry()
+	
+	if left_timer > 0:
+		left_timer -= 1
+	if right_timer > 0:
+		right_timer -= 1
 
 # Make sure the player can't go out of bounds by teleporting
 # them to the other side of the map.
@@ -75,23 +88,46 @@ func move_grabbed(var pos: String):
 
 func grab(left: bool, collision: KinematicCollision2D):
 	# If grabbed right has no children, it means it's empty.
-	if grabbed_right.get_child_count() != 0:
+	if grabbed_right.get_child_count() != 0 and !left and right_timer == 0:
 		grabbed_right.scale *= 2
-		grabbed_right.get_children()[0].disabled = false
+		grabbed_right.z_index = -10
+		grabbed_right.position = get_snapped_position(false)
+		clones.append(grabbed_right)
 		grabbed_right = KinematicBody2D.new()
-	if grabbed_left.get_child_count() != 0:
+		right_timer = settings.PICKUP_DELAY
+	if grabbed_left.get_child_count() != 0 and left and left_timer == 0:
 		grabbed_left.scale *= 2
-		grabbed_left.get_children()[0].disabled = false
+		grabbed_left.z_index = -10
+		grabbed_left.position = get_snapped_position(true)
+		clones.append(grabbed_left)
 		grabbed_left = KinematicBody2D.new()
+		left_timer = settings.PICKUP_DELAY
 	# If the collider exists, pick it up.
 	if collision != null:
 		if collision.collider != null:
 			var collider = collision.collider
-			if left and grabbed_right != collider:
-				collider.get_children()[0].disabled = true
-				collider.scale /= 2
-				grabbed_left = collider
-			elif grabbed_left != collider:
-				collider.get_children()[0].disabled = true
-				collider.scale /= 2
-				grabbed_right = collider
+			if !left and grabbed_right != collider and right_timer==0:
+				grabbed_right = collider.duplicate()
+				main.add_child(grabbed_right)
+				grabbed_right.get_children()[0].disabled = true
+				grabbed_right.scale /= 2
+				right_timer = settings.PICKUP_DELAY
+			elif left and grabbed_left != collider and left_timer==0:
+				grabbed_left = collider.duplicate()
+				main.add_child(grabbed_left)
+				grabbed_left.get_children()[0].disabled = true
+				grabbed_left.scale /= 2
+				left_timer = settings.PICKUP_DELAY
+
+func get_snapped_position(left: bool) -> Vector2:
+	var half_length = settings.GRID_SQUARE_LENGTH/2
+	if left:
+		var placement_x = int(((grabbed_left.position.x-settings.GRID_MARGIN)) / settings.GRID_SQUARE_MARGIN)
+		var placement_y = int(((grabbed_left.position.y-settings.GRID_MARGIN)) / settings.GRID_SQUARE_MARGIN)
+		var pos = Vector2(settings.GRID_MARGIN+half_length+((settings.GRID_SQUARE_MARGIN)*placement_x), settings.GRID_MARGIN+half_length+((settings.GRID_SQUARE_MARGIN)*placement_y))
+		return pos
+	else:
+		var placement_x = int((grabbed_right.position.x-settings.GRID_MARGIN) / settings.GRID_SQUARE_MARGIN)
+		var placement_y = int((grabbed_right.position.y-settings.GRID_MARGIN) / settings.GRID_SQUARE_MARGIN)
+		var pos = Vector2(settings.GRID_MARGIN+half_length+(settings.GRID_SQUARE_MARGIN*placement_x), settings.GRID_MARGIN+half_length+(settings.GRID_SQUARE_MARGIN*placement_y))
+		return pos

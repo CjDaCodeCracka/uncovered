@@ -1,3 +1,9 @@
 extends Node
 
 const PLAYER_SPEED = 7
+const PICKUP_DELAY = 10
+
+const GRID_LENGTH = 5
+const GRID_MARGIN = 15
+const GRID_SQUARE_MARGIN = 90
+const GRID_SQUARE_LENGTH = 80

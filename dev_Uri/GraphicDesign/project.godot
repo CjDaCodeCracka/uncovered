@@ -28,6 +28,10 @@ config/icon="res://icon.png"
 
 Settings="*res://Scripts/Settings.gd"
 Main="*res://Scripts/CreationScene.gd"
+PlayerBody="*res://Scripts/PlayerMovement.gd"
+GridSquare="*res://Scripts/GridSquare.gd"
+Symbols="*res://Scripts/Symbols.gd"
+Symbol="*res://Scripts/Symbol.gd"
 
 [gdnative]
 
